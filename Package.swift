@@ -26,7 +26,8 @@ let package = Package(
         ),
         .binaryTarget(
             name: "Clibgit2",
-            path: "./libgit2.xcframework"
+            url: "https://github.com/light-tech/LibGit2-On-iOS/releases/download/v1.1.0/Clibgit2.xcframework.zip",
+            checksum: "f10e544f6180c23a4de9a965e6bc45ea3ee92b08ebbe9c7f8733446fb7c2d1db"
         ),
         .testTarget(
             name: "SwiftGit2Tests",

@@ -30,6 +30,8 @@ let package = Package(
         ),
         .testTarget(
             name: "SwiftGit2Tests",
-            dependencies: ["SwiftGit2"]),
+            dependencies: ["SwiftGit2"],
+            path: "SwiftGit2Tests"
+        ),
     ]
 )

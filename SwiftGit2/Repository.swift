@@ -96,6 +96,11 @@ private func cloneOptions(bare: Bool = false, localClone: Bool = false, fetchOpt
 /// A git repository.
 public final class Repository {
 
+	/// MARK: - Initialize libgit2 library, must be called by client before anything else
+	public static func initialize_libgit2() {
+		git_libgit2_init()
+	}
+
 	// MARK: - Creating Repositories
 
 	/// Create a new repository at the given URL.

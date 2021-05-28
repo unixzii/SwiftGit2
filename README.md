@@ -30,48 +30,33 @@ case let .failure(error):
 }
 ```
 
+See [our iOS example app project](https://github.com/light-tech/SwiftGit2-SampleApp) to see the code in action.
+
 ## Design
-SwiftGit2 uses value objects wherever possible. That means using Swift’s `struct`s and `enum`s without holding references to libgit2 objects. This has a number of advantages:
+SwiftGit2 uses value objects wherever possible. That means using Swift's `struct`s and `enum`s without holding references to libgit2 objects. This has a number of advantages:
 
 1. Values can be used concurrently.
-2. Consuming values won’t result in disk access.
+2. Consuming values won't result in disk access.
 3. Disk access can be contained to a smaller number of APIs.
 
-This vastly simplifies the design of long-lived applications, which are the most common use case with Swift. Consequently, SwiftGit2 APIs don’t necessarily map 1-to-1 with libgit2 APIs.
+This vastly simplifies the design of long-lived applications, which are the most common use case with Swift. Consequently, SwiftGit2 APIs don't necessarily map 1-to-1 with libgit2 APIs.
 
-All methods for reading from or writing to a repository are on SwiftGit’s only `class`: `Repository`. This highlights the failability and mutation of these methods, while freeing up all other instances to be immutable `struct`s and `enum`s.
-
-## Required Tools
-To build SwiftGit2, you'll need the following tools installed locally:
-
-* cmake
-* libssh2
-* libtool
-* autoconf
-* automake
-* pkg-config
-
-```
-brew install cmake libssh2 libtool autoconf automake pkg-config
-```
+All methods for reading from or writing to a repository are on SwiftGit2's only `class`: `Repository`. This highlights the failability and mutation of these methods, while freeing up all other instances to be immutable `struct`s and `enum`s.
 
 ## Adding SwiftGit2 to your Project
-The easiest way to add SwiftGit2 to your project is to use [Carthage](https://github.com/Carthage/Carthage). Simply add `github "SwiftGit2/SwiftGit2"` to your `Cartfile` and run `carthage update`.
+The easiest way to add SwiftGit2 to your project is to [add our repository as a Swift package](https://developer.apple.com/documentation/swift_packages/adding_package_dependencies_to_your_app).
 
-If you’d like, you can do things the ~~hard~~ old-fashioned way:
+Note that **you need to choose `spm` branch of our fork https://github.com/light-tech/SwiftGit2 which was configured to be compatible with Swift package manager**. NEITHER the original repository https://github.com/SwiftGit2/SwiftGit2 nor other branch of our fork support Swift package manager as of this writing.
 
-1. Add SwiftGit2 as a submodule of your project’s repository.
-2. Run `git submodule update --init --recursive` to fetch all of SwiftGit2’s depedencies.
-3. Add `SwiftGit2.xcodeproj` to your project’s Xcode project or workspace.
-4. On the “Build Phases” tab of your application target, add `SwiftGit2.framework` to the “Link Binary With Libraries” phase. SwiftGit2 must also be added to a “Copy Frameworks” build phase.
-5. **If you added SwiftGit2 to a project (not a workspace)**, you will also need to add the appropriate SwiftGit2 target to the “Target Dependencies” of your application.
+You also need to add `libz.tbd` and `libiconv.tbd` to the app target's **Frameworks, Libraries and Embedded Content**.
 
-## Building SwiftGit2 Manually
-If you want to build a copy of SwiftGit2 without Carthage, possibly for development:
+Before using any of the SwiftGit2 API, add
+```swift
+Repository.initialize_libgit2()
+```
+to your app initialization method.
 
-1. Clone SwiftGit2
-2. Run `git submodule update --init --recursive` to clone the submodules
-3. Build in Xcode
+Check out [our iOS example app project](https://github.com/light-tech/SwiftGit2-SampleApp) for a starting point.
 
 ## Contributions
 We :heart: to receive pull requests! GitHub makes it easy:
@@ -80,7 +65,7 @@ We :heart: to receive pull requests! GitHub makes it easy:
 2. Create a branch with your changes
 3. Send a Pull Request
 
-All contributions should match GitHub’s [Swift Style Guide](https://github.com/github/swift-style-guide).
+All contributions should match GitHub's [Swift Style Guide](https://github.com/github/swift-style-guide).
 
 ## License
 SwiftGit2 is available under the MIT license.

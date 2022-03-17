@@ -12,21 +12,21 @@ let package = Package(
             name: "SwiftGit2",
             targets: ["SwiftGit2"]),
     ],
-    dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        .package(
-            name: "Clibgit2",
-            url: "https://github.com/light-tech/Clibgit2.git",
-            .branch("master")
-        ),
-    ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
+        .binaryTarget(
+            name: "Clibgit2",
+            path: "Prebuilt/Clibgit2.xcframework.zip"
+        ),
         .target(
             name: "SwiftGit2",
             dependencies: ["Clibgit2"],
-            path: "SwiftGit2"
+            path: "SwiftGit2",
+            linkerSettings: [
+                .linkedLibrary("z"),
+                .linkedLibrary("iconv"),
+            ]
         ),
         .testTarget(
             name: "SwiftGit2Tests",

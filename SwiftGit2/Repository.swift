@@ -11,6 +11,16 @@ import Clibgit2
 
 public typealias CheckoutProgressBlock = (String?, Int, Int) -> Void
 
+public typealias TransportMessageBlock = (String) -> Void
+
+public typealias TransportProgressBlock = (git_transfer_progress) -> Void
+
+class FetchOptionsPayload {
+    var credentials: Credentials?
+    var sidebandProgress: TransportMessageBlock?
+    var transportProgress: TransportProgressBlock?
+}
+
 /// Helper function used as the libgit2 progress callback in git_checkout_options.
 /// This is a function with a type signature of git_checkout_progress_cb.
 private func checkoutProgressCallback(path: UnsafePointer<Int8>?, completedSteps: Int, totalSteps: Int,
@@ -26,6 +36,27 @@ private func checkoutProgressCallback(path: UnsafePointer<Int8>?, completedSteps
 		}
 		block(path.flatMap(String.init(validatingUTF8:)), completedSteps, totalSteps)
 	}
+}
+
+private func sidebandProgressCallback(str: UnsafePointer<Int8>?, len: Int32,
+                                      payload: UnsafeMutableRawPointer?) -> Int32 {
+    let fetchOptionsPayload: FetchOptionsPayload = Unmanaged.fromOpaque(.init(payload!)).takeUnretainedValue()
+    if let sidebandProgress = fetchOptionsPayload.sidebandProgress {
+        let data = Data(bytes: .init(str!), count: Int(len))
+        if let string = String.init(data: data, encoding: .utf8) {
+            sidebandProgress(string)
+        }
+    }
+    return 0
+}
+
+private func transferProgressCallback(stats: UnsafePointer<git_transfer_progress>?,
+                                      payload: UnsafeMutableRawPointer?) -> Int32 {
+    let fetchOptionsPayload: FetchOptionsPayload = Unmanaged.fromOpaque(.init(payload!)).takeUnretainedValue()
+    if let transportProgress = fetchOptionsPayload.transportProgress {
+        transportProgress(stats!.pointee)
+    }
+    return 0
 }
 
 /// Helper function for initializing libgit2 git_checkout_options.
@@ -53,7 +84,7 @@ private func checkoutOptions(strategy: CheckoutStrategy,
 	return options
 }
 
-private func fetchOptions(credentials: Credentials) -> git_fetch_options {
+private func fetchOptions(payload: UnsafeMutableRawPointer) -> git_fetch_options {
 	let pointer = UnsafeMutablePointer<git_fetch_options>.allocate(capacity: 1)
 	git_fetch_init_options(pointer, UInt32(GIT_FETCH_OPTIONS_VERSION))
 
@@ -61,7 +92,9 @@ private func fetchOptions(credentials: Credentials) -> git_fetch_options {
 
 	pointer.deallocate()
 
-	options.callbacks.payload = credentials.toPointer()
+    options.callbacks.payload = .init(payload)
+    options.callbacks.sideband_progress = sidebandProgressCallback
+    options.callbacks.transfer_progress = transferProgressCallback
 	options.callbacks.credentials = credentialsCallback
 
 	return options
@@ -150,15 +183,24 @@ public final class Repository {
 	/// credentials      - Credentials to be used when connecting to the remote.
 	/// checkoutStrategy - The checkout strategy to use, if being checked out.
 	/// checkoutProgress - A block that's called with the progress of the checkout.
+    /// sidebandProgress - A block that's called with the textual progress from the remote.
+    /// transferProgress - A block that's called with the current count of progress done by the indexer.
 	///
 	/// Returns a `Result` with a `Repository` or an error.
 	public class func clone(from remoteURL: URL, to localURL: URL, localClone: Bool = false, bare: Bool = false,
 	                        credentials: Credentials = .default, checkoutStrategy: CheckoutStrategy = .Safe,
-	                        checkoutProgress: CheckoutProgressBlock? = nil) -> Result<Repository, NSError> {
+	                        checkoutProgress: CheckoutProgressBlock? = nil,
+                            sidebandProgress: TransportMessageBlock? = nil,
+                            transferProgress: TransportProgressBlock? = nil) -> Result<Repository, NSError> {
+        let fetchOptionsPayload = FetchOptionsPayload()
+        fetchOptionsPayload.credentials = credentials
+        fetchOptionsPayload.sidebandProgress = sidebandProgress
+        fetchOptionsPayload.transportProgress = transferProgress
+        
 		var options = cloneOptions(
 			bare: bare,
 			localClone: localClone,
-			fetchOptions: fetchOptions(credentials: credentials),
+            fetchOptions: fetchOptions(payload: Unmanaged.passUnretained(fetchOptionsPayload).toOpaque()),
 			checkoutOptions: checkoutOptions(strategy: checkoutStrategy, progress: checkoutProgress))
 
 		var pointer: OpaquePointer? = nil

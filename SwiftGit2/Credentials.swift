@@ -46,7 +46,8 @@ internal func credentialsCallback(
 	// Find username_from_url
 	let name = username.map(String.init(cString:))
 
-	switch Credentials.fromPointer(payload!) {
+    let fetchOptionsPayload: FetchOptionsPayload = Unmanaged.fromOpaque(UnsafeRawPointer(payload!)).takeUnretainedValue()
+    switch fetchOptionsPayload.credentials ?? .default {
 	case .default:
 		result = git_cred_default_new(cred)
 	case .sshAgent:
